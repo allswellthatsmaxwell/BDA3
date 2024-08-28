@@ -1,5 +1,8 @@
 from scipy.stats import poisson
 import numpy as np
+import argparse
+
+TARGET_CLOSING_TIME = (16 - 9) * 60
 
 
 class PatientLabeler:
@@ -45,6 +48,7 @@ class Doctor:
 
     def assign_patient(self):
         self.time_remaining_with_current_patient = int(np.ceil(np.random.uniform(5, 20)))
+
     def __repr__(self):
         return f"Doctor({self.label}, {self.time_remaining_with_current_patient})"
 
@@ -54,7 +58,7 @@ def is_empty(lst):
 
 
 class Clinic:
-    def __init__(self, ndoctors=3, closing_time=(16 - 9) * 60):
+    def __init__(self, ndoctors=3, closing_time=TARGET_CLOSING_TIME):
         self.doctors = [Doctor(chr(65 + i)) for i in range(ndoctors)]
         self.closing_time = closing_time
         self.is_closed = False
@@ -135,8 +139,18 @@ class Simulation:
             self.step()
 
 
-if __name__ == '__main__':
+def run_single_simulation():
     simulation = Simulation()
     Clinic.print_status_headers()
     simulation.run()
-    print(simulation.clinic.patient_history)
+
+    n_patients = len(simulation.clinic.patient_history)
+    avg_waiting_time = np.mean([p.waiting_time for p in simulation.clinic.patient_history])
+    actual_closing_time = simulation.time
+    closing_time_diff = actual_closing_time - TARGET_CLOSING_TIME - 1
+    print(f"Saw {n_patients} patients, with an average waiting time of {avg_waiting_time:1} minutes")
+    print(f"The clinic closed {closing_time_diff // 60}h, {closing_time_diff % 60}m after 4pm.")
+
+
+if __name__ == '__main__':
+    run_single_simulation()
