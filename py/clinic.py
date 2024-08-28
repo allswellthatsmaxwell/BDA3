@@ -1,4 +1,4 @@
-from scipy.stats import poisson, uniform
+from scipy.stats import poisson
 import numpy as np
 
 
@@ -24,7 +24,6 @@ class Patient:
         return f"Patient({self.label}, {self.waiting_time})"
 
     def step(self):
-        # print(f"Stepping patient {self.label}.")
         self.waiting_time += 1
 
 
@@ -45,11 +44,7 @@ class Doctor:
             self.time_remaining_with_current_patient -= 1
 
     def assign_patient(self):
-        # decide how long he'll be with this patient
         self.time_remaining_with_current_patient = int(np.ceil(np.random.uniform(5, 20)))
-        # print(
-        #     f"This patient will spend {int(np.ceil(self.time_remaining_with_current_patient))} minutes with the doctor.")
-
     def __repr__(self):
         return f"Doctor({self.label}, {self.time_remaining_with_current_patient})"
 
@@ -99,11 +94,6 @@ class Clinic:
         print(','.join([str(v) for v in s.values()]))
 
     def step(self, time):
-        for doctor in self.doctors:
-            doctor.step()
-        for patient in self.patient_queue:
-            patient.step()
-
         self.close_if_appropriate(time)
 
         if not self.is_closed and self.patient_queue:
@@ -112,8 +102,12 @@ class Clinic:
                 patient_to_assign: Patient = self.patient_queue.pop(0)
                 self.patient_history.append(patient_to_assign)
                 available_doctor.assign_patient()
-                # print(f"Assigned {patient_to_assign} to {available_doctor}.")
         self.print_status(time)
+
+        for doctor in self.doctors:
+            doctor.step()
+        for patient in self.patient_queue:
+            patient.step()
 
     def close_if_appropriate(self, time):
         self.is_closed = self.has_no_patients() and time >= self.closing_time
@@ -129,17 +123,15 @@ class Simulation:
     def step(self):
         if self.minutes_until_next_patient == 0:
             if self.clinic.still_accepting_patients(self.time):
-                # print("adding patient")
                 self.clinic.add_patient()
             self.minutes_until_next_patient = self.arrivals_distribution.rvs(1)[0]
 
-        self.minutes_until_next_patient -= 1
         self.clinic.step(self.time)
+        self.minutes_until_next_patient -= 1
         self.time += 1
 
     def run(self):
         while not self.clinic.is_closed:
-            # print(self.time)
             self.step()
 
 
@@ -147,4 +139,4 @@ if __name__ == '__main__':
     simulation = Simulation()
     Clinic.print_status_headers()
     simulation.run()
-    # print(simulation.clinic.patient_history)
+    print(simulation.clinic.patient_history)
