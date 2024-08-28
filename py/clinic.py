@@ -24,7 +24,7 @@ class Patient:
         return f"Patient({self.label}, {self.waiting_time})"
 
     def step(self):
-        print(f"Stepping patient {self.label}.")
+        # print(f"Stepping patient {self.label}.")
         self.waiting_time += 1
 
 
@@ -47,8 +47,8 @@ class Doctor:
     def assign_patient(self):
         # decide how long he'll be with this patient
         self.time_remaining_with_current_patient = int(np.ceil(np.random.uniform(5, 20)))
-        print(
-            f"This patient will spend {int(np.ceil(self.time_remaining_with_current_patient))} minutes with the doctor.")
+        # print(
+        #     f"This patient will spend {int(np.ceil(self.time_remaining_with_current_patient))} minutes with the doctor.")
 
     def __repr__(self):
         return f"Doctor({self.label}, {self.time_remaining_with_current_patient})"
@@ -77,15 +77,30 @@ class Clinic:
         return None
 
     def has_no_patients(self):
-        return is_empty(self.patient_queue)
+        any_doctors_still_with_patients = any([
+            d.time_remaining_with_current_patient > 0
+            if d.time_remaining_with_current_patient is not None
+            else False
+            for d in self.doctors])
+        return is_empty(self.patient_queue) and not any_doctors_still_with_patients
 
     def still_accepting_patients(self, time):
         return time < self.closing_time
 
+    @staticmethod
+    def print_status_headers():
+        print('t,A,B,C,waiting')
+
+    def print_status(self, time):
+        doctor_statuses = ','.join([f"{d.time_remaining_with_current_patient}" for d in self.doctors])
+        s = {'t': time,
+             'doctor status': doctor_statuses,
+             'patients waiting': len(self.patient_queue)}
+        print(','.join([str(v) for v in s.values()]))
+
     def step(self, time):
         for doctor in self.doctors:
             doctor.step()
-            print(doctor)
         for patient in self.patient_queue:
             patient.step()
 
@@ -97,7 +112,8 @@ class Clinic:
                 patient_to_assign: Patient = self.patient_queue.pop(0)
                 self.patient_history.append(patient_to_assign)
                 available_doctor.assign_patient()
-                print(f"Assigned {patient_to_assign} to {available_doctor}.")
+                # print(f"Assigned {patient_to_assign} to {available_doctor}.")
+        self.print_status(time)
 
     def close_if_appropriate(self, time):
         self.is_closed = self.has_no_patients() and time >= self.closing_time
@@ -113,7 +129,7 @@ class Simulation:
     def step(self):
         if self.minutes_until_next_patient == 0:
             if self.clinic.still_accepting_patients(self.time):
-                print("adding patient")
+                # print("adding patient")
                 self.clinic.add_patient()
             self.minutes_until_next_patient = self.arrivals_distribution.rvs(1)[0]
 
@@ -123,11 +139,12 @@ class Simulation:
 
     def run(self):
         while not self.clinic.is_closed:
-            print(self.time)
+            # print(self.time)
             self.step()
 
 
 if __name__ == '__main__':
     simulation = Simulation()
+    Clinic.print_status_headers()
     simulation.run()
-    print(simulation.clinic.patient_history)
+    # print(simulation.clinic.patient_history)
